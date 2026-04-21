@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Lock, ShieldCheck } from "lucide-react";
+import { Lock } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { login, ADMIN_USER, ADMIN_PASS } from "@/lib/auth";
+import { login } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -18,12 +18,13 @@ function LoginPage() {
   const [p, setP] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (login(u, p)) {
+    const ok = await login(u, p);
+    if (ok) {
       nav({ to: "/admin" });
     } else {
-      setErr("Invalid credentials. Use the demo account below.");
+      setErr("Invalid username or password.");
     }
   };
 
@@ -57,13 +58,6 @@ function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 rounded-lg border border-border/60 bg-muted/40 p-3 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5 text-foreground">
-              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-              <span className="font-medium">Demo credentials</span>
-            </div>
-            <p className="mt-1 font-mono">{ADMIN_USER} / {ADMIN_PASS}</p>
-          </div>
         </Card>
       </main>
     </div>
