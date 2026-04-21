@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, Package, Calendar, MapPin, Phone, AlertCircle, Sparkles } from "lucide-react";
 import { Header } from "@/components/Header";
 import { StatusTimeline } from "@/components/StatusTimeline";
@@ -30,28 +30,31 @@ function Index() {
   const [sample, setSample] = useState<string[]>([]);
 
   useEffect(() => {
-    const refresh = () => {
-      setSample(getOrders().slice(0, 3).map((o) => o.id));
-      if (submitted) setOrder(getOrder(submitted));
+    const refresh = async () => {
+      const orders = await getOrders();
+      setSample(orders.slice(0, 3).map((o) => o.id));
+      if (submitted) setOrder(await getOrder(submitted));
     };
-    refresh();
-    return useOrdersChange(refresh);
+    void refresh();
+    return useOrdersChange(() => {
+      void refresh();
+    });
   }, [submitted]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const id = query.trim();
     if (!id) return;
-    const found = getOrder(id);
+    const found = await getOrder(id);
     setSubmitted(id);
     setOrder(found);
     setError(found ? null : "No shipment found for this tracking ID.");
   };
 
-  const tryDemo = (id: string) => {
+  const tryDemo = async (id: string) => {
     setQuery(id);
     setSubmitted(id);
-    setOrder(getOrder(id));
+    setOrder(await getOrder(id));
     setError(null);
   };
 
@@ -72,7 +75,7 @@ function Index() {
         </section>
 
         <Card className="mx-auto mt-10 max-w-2xl border-border/60 bg-gradient-card p-6 shadow-elegant animate-fade-in-up">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row">
+          <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -93,7 +96,7 @@ function Index() {
               {sample.map((id) => (
                 <button
                   key={id}
-                  onClick={() => tryDemo(id)}
+                  onClick={() => void tryDemo(id)}
                   className="rounded-md border border-border bg-muted/40 px-2 py-1 font-mono text-[11px] text-foreground transition-smooth hover:border-primary hover:text-primary"
                 >
                   {id}
