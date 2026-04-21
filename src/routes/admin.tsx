@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -43,9 +43,11 @@ function AdminPage() {
       return;
     }
     setAuthChecked(true);
-    const refresh = () => setOrders(getOrders());
-    refresh();
-    return useOrdersChange(refresh);
+    const refresh = async () => setOrders(await getOrders());
+    void refresh();
+    return useOrdersChange(() => {
+      void refresh();
+    });
   }, [nav]);
 
   const filtered = useMemo(() => {
@@ -174,8 +176,8 @@ function AdminPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         title="Create new order"
-        onSubmit={(d) => {
-          createOrder(d);
+        onSubmit={async (d) => {
+          await createOrder(d);
           setCreateOpen(false);
         }}
       />
@@ -185,9 +187,9 @@ function AdminPage() {
         onOpenChange={(o) => !o && setEditing(null)}
         title="Edit order"
         initial={editing ?? undefined}
-        onSubmit={(d) => {
+        onSubmit={async (d) => {
           if (editing) {
-            updateOrder(editing.id, d);
+            await updateOrder(editing.id, d);
             setEditing(null);
           }
         }}
@@ -206,7 +208,9 @@ function AdminPage() {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
-                if (deleting) deleteOrder(deleting.id);
+                if (deleting) {
+                  void deleteOrder(deleting.id);
+                }
                 setDeleting(null);
               }}
             >
@@ -232,7 +236,9 @@ function StatusSelect({ order }: { order: Order }) {
   return (
     <Select
       value={order.status}
-      onValueChange={(v) => advanceStatus(order.id, v as OrderStatus)}
+      onValueChange={(v) => {
+        void advanceStatus(order.id, v as OrderStatus);
+      }}
     >
       <SelectTrigger className="h-8 w-44 border-primary/30 bg-primary/10 text-xs font-medium text-primary">
         <SelectValue />
@@ -262,7 +268,7 @@ function OrderDialog({
   onOpenChange: (o: boolean) => void;
   title: string;
   initial?: Order;
-  onSubmit: (d: FormData) => void;
+  onSubmit: (d: FormData) => void | Promise<void>;
 }) {
   const [form, setForm] = useState<FormData>({
     customerName: "",
@@ -294,7 +300,7 @@ function OrderDialog({
           onSubmit={(e) => {
             e.preventDefault();
             if (!form.customerName.trim() || !form.address.trim()) return;
-            onSubmit({
+            void onSubmit({
               ...form,
               estimatedDelivery: new Date(form.estimatedDelivery).toISOString(),
             });
